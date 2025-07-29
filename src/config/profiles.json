@@ -1,0 +1,58 @@
+{
+  "profiles": [
+    {
+      "username": "iamshackelford",
+      "displayName": "Nick Shackelford",
+      "enabled": true,
+      "includeRetweets": false,
+      "includeReplies": false,
+      "keywords": ["creative strategy"]
+    },
+    {
+      "username": "evanmklee",
+      "displayName": "Evan Lee",
+      "enabled": true,
+      "includeRetweets": true,
+      "includeReplies": false,
+      "keywords": ["creative strategy"]
+    },
+    {
+      "username": "HireFireTeam",
+      "displayName": "Jess @ FireTeam",
+      "enabled": true,
+      "includeRetweets": true,
+      "includeReplies": false,
+      "keywords": ["creative strategy"]
+    },
+    {
+      "username": "connorrolain",
+      "displayName": "Connor Rolain",
+      "enabled": true,
+      "includeRetweets": true,
+      "includeReplies": false,
+      "keywords": ["creative strategy"]
+    },
+    {
+      "username": "FilipMerdic",
+      "displayName": "Filip Merdic",
+      "enabled": true,
+      "includeRetweets": true,
+      "includeReplies": false,
+      "keywords": ["creative strategy"]
+    },
+    {
+      "username": "couuor",
+      "displayName": "Connor MacDonald",
+      "enabled": true,
+      "includeRetweets": true,
+      "includeReplies": false,
+      "keywords": ["creative strategy"]
+    }
+  ],
+  "settings": {
+    "defaultIncludeRetweets": false,
+    "defaultIncludeReplies": false,
+    "maxTweetsPerProfile": 10,
+    "minIntervalMinutes": 5
+  }
+} 

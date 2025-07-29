@@ -1,0 +1,50 @@
+name: Twitter Scraper
+
+on:
+  schedule:
+    # Run every 15 minutes
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+    # Allow manual trigger
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Create environment file
+      run: |
+        cat > .env << EOF
+        TWITTERAPI_API_KEY=${{ secrets.TWITTERAPI_API_KEY }}
+        APIFY_API_TOKEN=${{ secrets.APIFY_API_TOKEN }}
+        SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL }}
+        SLACK_BOT_TOKEN=${{ secrets.SLACK_BOT_TOKEN }}
+        SLACK_CHANNEL=${{ secrets.SLACK_CHANNEL }}
+        SCRAPE_INTERVAL_MINUTES=15
+        MAX_TWEETS_PER_RUN=50
+        NODE_ENV=production
+        LOG_LEVEL=info
+        EOF
+        
+    - name: Run scraper
+      run: npm run scrape
+      
+    - name: Upload logs
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: scraper-logs
+        path: logs/
+        retention-days: 7 

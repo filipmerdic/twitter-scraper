@@ -1,0 +1,89 @@
+service: twitter-slack-scraper
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  environment:
+    NODE_ENV: production
+    SCRAPE_INTERVAL_MINUTES: ${env:SCRAPE_INTERVAL_MINUTES, '15'}
+    MAX_TWEETS_PER_RUN: ${env:MAX_TWEETS_PER_RUN, '50'}
+    DB_FILE_PATH: /tmp/tweets.json
+    LOG_LEVEL: info
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: "arn:aws:logs:*:*:*"
+
+functions:
+  scraper:
+    handler: serverless/handler.scrape
+    events:
+      - schedule:
+          rate: rate(${env:SCRAPE_INTERVAL_MINUTES, '15'} minutes)
+          enabled: true
+    timeout: 300
+    memorySize: 512
+    environment:
+      TWITTERAPI_API_KEY: ${env:TWITTERAPI_API_KEY}
+      APIFY_API_TOKEN: ${env:APIFY_API_TOKEN}
+      SLACK_WEBHOOK_URL: ${env:SLACK_WEBHOOK_URL}
+      SLACK_BOT_TOKEN: ${env:SLACK_BOT_TOKEN}
+      SLACK_CHANNEL: ${env:SLACK_CHANNEL}
+
+  manualTrigger:
+    handler: serverless/handler.manualTrigger
+    events:
+      - http:
+          path: scrape
+          method: post
+          cors: true
+    timeout: 300
+    memorySize: 512
+    environment:
+      TWITTERAPI_API_KEY: ${env:TWITTERAPI_API_KEY}
+      APIFY_API_TOKEN: ${env:APIFY_API_TOKEN}
+      SLACK_WEBHOOK_URL: ${env:SLACK_WEBHOOK_URL}
+      SLACK_BOT_TOKEN: ${env:SLACK_BOT_TOKEN}
+      SLACK_CHANNEL: ${env:SLACK_CHANNEL}
+
+  healthCheck:
+    handler: serverless/handler.healthCheck
+    events:
+      - http:
+          path: health
+          method: get
+          cors: true
+    timeout: 30
+    memorySize: 128
+
+  getStats:
+    handler: serverless/handler.getStats
+    events:
+      - http:
+          path: stats
+          method: get
+          cors: true
+    timeout: 30
+    memorySize: 128
+    environment:
+      TWITTERAPI_API_KEY: ${env:TWITTERAPI_API_KEY}
+      APIFY_API_TOKEN: ${env:APIFY_API_TOKEN}
+      SLACK_WEBHOOK_URL: ${env:SLACK_WEBHOOK_URL}
+      SLACK_BOT_TOKEN: ${env:SLACK_BOT_TOKEN}
+      SLACK_CHANNEL: ${env:SLACK_CHANNEL}
+
+plugins:
+  - serverless-offline
+
+custom:
+  serverless-offline:
+    httpPort: 3000
+    noPrependStageInUrl: true 
