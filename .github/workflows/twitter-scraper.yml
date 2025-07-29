@@ -11,12 +11,28 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Trigger Vercel Scraper
-      run: |
-        curl -X POST ${{ secrets.VERCEL_SCRAPE_URL }} \
-          -H "Content-Type: application/json"
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run Twitter Scraper
+      env:
+        TWITTERAPI_API_KEY: ${{ secrets.TWITTERAPI_API_KEY }}
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+        SCRAPE_INTERVAL_MINUTES: 30
+        NODE_ENV: production
+      run: npm run scrape
       
     - name: Check Status
       run: |
-        echo "Scraping triggered at $(date)"
-        echo "Check Vercel logs for results" 
+        echo "Scraping completed at $(date)"
+        echo "Check Slack for new tweets" 
