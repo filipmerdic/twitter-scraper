@@ -2,14 +2,14 @@
   "version": 2,
   "name": "twitter-scraper-frontend",
   "functions": {
-    "serverless/handler.js": {
+    "api/index.js": {
       "maxDuration": 30
     }
   },
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "serverless/handler.js"
+      "dest": "api/index.js"
     }
   ],
   "env": {
