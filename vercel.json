@@ -11,12 +11,6 @@
       "maxDuration": 30
     }
   },
-  "crons": [
-    {
-      "path": "/api/scrape",
-      "schedule": "*/30 * * * *"
-    }
-  ],
   "env": {
     "NODE_ENV": "production"
   }

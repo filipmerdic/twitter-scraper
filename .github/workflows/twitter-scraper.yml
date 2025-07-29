@@ -1,0 +1,22 @@
+name: Twitter Scraper
+
+on:
+  schedule:
+    # Run every 30 minutes
+    - cron: '*/30 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Trigger Vercel Scraper
+      run: |
+        curl -X POST ${{ secrets.VERCEL_SCRAPE_URL }} \
+          -H "Content-Type: application/json"
+      
+    - name: Check Status
+      run: |
+        echo "Scraping triggered at $(date)"
+        echo "Check Vercel logs for results" 
