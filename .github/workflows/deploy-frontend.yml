@@ -1,0 +1,132 @@
+name: Deploy Twitter Scraper Frontend
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run tests
+      run: npm test
+      env:
+        CI: true
+    
+    - name: Check if frontend files exist
+      run: |
+        if [ ! -f "public/index.html" ]; then
+          echo "❌ public/index.html not found"
+          exit 1
+        fi
+        if [ ! -f "public/styles.css" ]; then
+          echo "❌ public/styles.css not found"
+          exit 1
+        fi
+        if [ ! -f "public/script.js" ]; then
+          echo "❌ public/script.js not found"
+          exit 1
+        fi
+        if [ ! -f "api/profiles.js" ]; then
+          echo "❌ api/profiles.js not found"
+          exit 1
+        fi
+        echo "✅ All frontend files found"
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js 20.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Create deployment package
+      run: |
+        mkdir -p deployment
+        cp -r src deployment/
+        cp -r public deployment/
+        cp -r api deployment/
+        cp package*.json deployment/
+        cp .env.example deployment/
+        cp README.md deployment/
+        cp FRONTEND.md deployment/
+        cp docker-compose.yml deployment/
+        cp Dockerfile deployment/
+        
+        # Create a simple start script for deployment
+        cat > deployment/start.sh << 'EOF'
+        #!/bin/bash
+        echo "Starting Twitter Scraper Frontend..."
+        echo "Frontend will be available at: http://localhost:3000"
+        echo "API endpoints:"
+        echo "  - GET  /api/profiles"
+        echo "  - PUT  /api/profiles"
+        echo "  - POST /scrape (manual trigger)"
+        echo "  - GET  /stats"
+        echo ""
+        npm start
+        EOF
+        chmod +x deployment/start.sh
+    
+    - name: Create deployment artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: twitter-scraper-frontend
+        path: deployment/
+        retention-days: 30
+    
+
+    
+    - name: Create deployment summary
+      run: |
+        echo "## 🚀 Frontend Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### ✅ Successfully deployed Twitter Scraper Frontend" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Features:**" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Add/Remove Twitter accounts" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Manage keywords for each account" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Enable/Disable account monitoring" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Configure retweet and reply settings" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Real-time profile management" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**API Endpoints:**" >> $GITHUB_STEP_SUMMARY
+        echo "- `GET /api/profiles` - Get all profiles" >> $GITHUB_STEP_SUMMARY
+        echo "- `PUT /api/profiles` - Update profiles" >> $GITHUB_STEP_SUMMARY
+        echo "- `POST /scrape` - Manual scraping trigger" >> $GITHUB_STEP_SUMMARY
+        echo "- `GET /stats` - Get scraping statistics" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Next Steps:**" >> $GITHUB_STEP_SUMMARY
+        echo "1. Set up environment variables (Twitter API keys, Slack webhook)" >> $GITHUB_STEP_SUMMARY
+        echo "2. Access the frontend at your deployment URL" >> $GITHUB_STEP_SUMMARY
+        echo "3. Add Twitter accounts to monitor" >> $GITHUB_STEP_SUMMARY
+        echo "4. Configure keywords and settings" >> $GITHUB_STEP_SUMMARY
+        echo "5. Save changes to start monitoring" >> $GITHUB_STEP_SUMMARY 

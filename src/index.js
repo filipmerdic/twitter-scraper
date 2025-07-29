@@ -8,6 +8,7 @@ const logger = require('./utils/logger');
 const { validateEnvironment } = require('./utils/helpers');
 const TwitterScraper = require('./scraper');
 const dbService = require('./services/dbService');
+const profilesApi = require('../api/profiles');
 
 class TwitterScraperServer {
   constructor() {
@@ -53,12 +54,17 @@ class TwitterScraperServer {
    */
   setupMiddleware() {
     // Security middleware
-    this.app.use(helmet());
+    this.app.use(helmet({
+      contentSecurityPolicy: false // Disable CSP for development
+    }));
     this.app.use(cors());
 
     // Body parsing middleware
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true }));
+
+    // Serve static files
+    this.app.use(express.static(path.join(__dirname, '../public')));
 
     // Logging middleware
     this.app.use((req, res, next) => {
@@ -207,6 +213,15 @@ class TwitterScraperServer {
           message: error.message
         });
       }
+    });
+
+    // Profiles API endpoints
+    this.app.get('/api/profiles', profilesApi.getProfiles);
+    this.app.put('/api/profiles', profilesApi.updateProfiles);
+
+    // Serve the frontend
+    this.app.get('/', (req, res) => {
+      res.sendFile(path.join(__dirname, '../public/index.html'));
     });
 
     // Error handling middleware

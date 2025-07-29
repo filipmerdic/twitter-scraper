@@ -1,6 +1,15 @@
 # Twitter to Slack Scraper
 
-A Node.js application that monitors specific Twitter profiles and sends new tweets directly to a Slack channel.
+A Node.js application that monitors specific Twitter profiles and sends new tweets directly to a Slack channel. Now with a **web-based frontend** for easy account management!
+
+## ✨ New Features
+
+- **🌐 Web Interface**: Manage Twitter accounts through a beautiful web UI
+- **📝 Add/Remove Accounts**: Easily add or remove Twitter accounts to monitor
+- **🔍 Keyword Management**: Set specific keywords to filter tweets for each account
+- **⚙️ Account Settings**: Configure retweet and reply inclusion per account
+- **🔄 Real-time Updates**: Changes are saved immediately and picked up by the scraper
+- **📊 Visual Dashboard**: See all monitored accounts at a glance
 
 ## 🏗️ Architecture
 
@@ -12,13 +21,15 @@ This project supports multiple deployment options:
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### Option 1: Deploy with Frontend (Recommended)
 
-- Node.js 18+ 
-- Twitter API access (via TwitterAPI.io or Apify)
-- Slack workspace with webhook or bot token
+1. **Fork this repository** to your GitHub account
+2. **Deploy to Railway/Render/Heroku** (see [DEPLOYMENT.md](DEPLOYMENT.md))
+3. **Set environment variables** (Twitter API key, Slack webhook)
+4. **Access the web interface** and add Twitter accounts
+5. **Start monitoring!**
 
-### Installation
+### Option 2: Local Development
 
 ```bash
 # Clone the repository
@@ -33,7 +44,18 @@ cp env.example .env
 
 # Edit .env with your API keys
 nano .env
+
+# Start the application
+npm run dev
+
+# Access the frontend at http://localhost:3000
 ```
+
+### Prerequisites
+
+- Node.js 18+ 
+- Twitter API access (via TwitterAPI.io or Apify)
+- Slack workspace with webhook or bot token
 
 ### Configuration
 
@@ -48,7 +70,8 @@ nano .env
    - Invite bot to your target channel
 
 3. **Target Profiles**:
-   - Edit `config/profiles.json` with Twitter usernames to monitor
+   - Use the web interface at `http://localhost:3000` to manage profiles
+   - Or edit `src/config/profiles.json` manually with Twitter usernames to monitor
 
 ## 📁 Project Structure
 
@@ -65,6 +88,12 @@ nano .env
 │   │   └── helpers.js        # Utility functions
 │   └── config/
 │       └── profiles.json     # Target Twitter profiles
+├── public/                   # Frontend files
+│   ├── index.html           # Main HTML file
+│   ├── styles.css           # CSS styles
+│   └── script.js            # JavaScript functionality
+├── api/                     # API endpoints
+│   └── profiles.js          # Profile management API
 ├── serverless/
 │   └── handler.js            # AWS Lambda handler
 ├── data/                     # Database files
@@ -73,6 +102,25 @@ nano .env
 ```
 
 ## 🔧 Usage
+
+### Web Interface
+
+1. **Start the server**:
+   ```bash
+   npm run dev
+   ```
+
+2. **Open your browser** and go to `http://localhost:3000`
+
+3. **Add Twitter accounts**:
+   - Enter username and display name
+   - Add keywords to filter tweets
+   - Configure retweet/reply settings
+   - Click "Add Account"
+
+4. **Save changes**:
+   - Click "Save All Changes" to persist your configuration
+   - The scraper will use the updated profiles on its next run
 
 ### Server Mode (Recommended for development)
 

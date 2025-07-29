@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
+    "frontend": "node src/index.js",
     "scrape": "node src/scraper.js",
     "test": "jest",
     "deploy": "serverless deploy",

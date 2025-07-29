@@ -1,360 +1,186 @@
-# Deployment Guide
+# Twitter Scraper Frontend Deployment Guide
 
-This guide covers multiple deployment options for the Twitter to Slack Scraper.
+This guide will help you deploy the Twitter Scraper Frontend to various platforms.
 
-## 🚀 Quick Start (Local Development)
+## Quick Deploy Options
 
-1. **Setup Environment**:
+### 1. Railway (Recommended)
+
+Railway is a simple platform for deploying Node.js applications.
+
+1. **Fork this repository** to your GitHub account
+2. **Go to [Railway](https://railway.app)** and sign in with GitHub
+3. **Click "New Project"** → "Deploy from GitHub repo"
+4. **Select your forked repository**
+5. **Add environment variables**:
+   ```
+   TWITTER_BEARER_TOKEN=your_twitter_bearer_token
+   SLACK_WEBHOOK_URL=your_slack_webhook_url
+   SCRAPE_INTERVAL_MINUTES=15
+   ```
+6. **Deploy!** Your frontend will be available at the provided URL
+
+### 2. Render
+
+Render is another great option for Node.js deployments.
+
+1. **Fork this repository** to your GitHub account
+2. **Go to [Render](https://render.com)** and sign up
+3. **Click "New"** → "Web Service"
+4. **Connect your GitHub repository**
+5. **Configure the service**:
+   - **Name**: `twitter-scraper-frontend`
+   - **Environment**: `Node`
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+6. **Add environment variables** (same as Railway)
+7. **Deploy!**
+
+### 3. Heroku
+
+1. **Install Heroku CLI** and login
+2. **Create a new Heroku app**:
    ```bash
-   npm run setup
-   # Follow the interactive prompts
+   heroku create your-app-name
+   ```
+3. **Add environment variables**:
+   ```bash
+   heroku config:set TWITTER_BEARER_TOKEN=your_token
+   heroku config:set SLACK_WEBHOOK_URL=your_webhook
+   heroku config:set SCRAPE_INTERVAL_MINUTES=15
+   ```
+4. **Deploy**:
+   ```bash
+   git push heroku main
    ```
 
-2. **Install Dependencies**:
+### 4. Vercel
+
+1. **Go to [Vercel](https://vercel.com)** and sign in with GitHub
+2. **Import your repository**
+3. **Configure the project**:
+   - **Framework Preset**: Node.js
+   - **Build Command**: `npm install`
+   - **Output Directory**: `.`
+   - **Install Command**: `npm install`
+4. **Add environment variables** in the Vercel dashboard
+5. **Deploy!**
+
+## Environment Variables
+
+Make sure to set these environment variables in your deployment platform:
+
+```bash
+# Required
+TWITTER_BEARER_TOKEN=your_twitter_api_bearer_token
+SLACK_WEBHOOK_URL=your_slack_webhook_url
+
+# Optional
+SCRAPE_INTERVAL_MINUTES=15
+PORT=3000
+NODE_ENV=production
+```
+
+## Manual Deployment
+
+If you prefer to deploy manually:
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/yourusername/twitter-scraper.git
+   cd twitter-scraper
+   ```
+
+2. **Install dependencies**:
    ```bash
    npm install
    ```
 
-3. **Configure Profiles**:
-   Edit `src/config/profiles.json` with Twitter usernames to monitor.
-
-4. **Run Locally**:
+3. **Set up environment variables**:
    ```bash
-   # Development mode with auto-restart
-   npm run dev
-   
-   # Production mode
-   npm start
-   
-   # One-time scraping
-   npm run scrape
+   cp .env.example .env
+   # Edit .env with your actual values
    ```
 
-## 🐳 Docker Deployment
+4. **Start the application**:
+   ```bash
+   npm start
+   ```
 
-### Option 1: Docker Compose (Recommended)
+5. **Access the frontend** at `http://localhost:3000`
 
-```bash
-# Build and run with Docker Compose
-npm run docker:compose
+## Docker Deployment
 
-# View logs
-docker-compose logs -f twitter-scraper
+You can also deploy using Docker:
 
-# Stop services
-docker-compose down
-```
+1. **Build the Docker image**:
+   ```bash
+   docker build -t twitter-scraper .
+   ```
 
-### Option 2: Manual Docker
+2. **Run the container**:
+   ```bash
+   docker run -p 3000:3000 \
+     -e TWITTER_BEARER_TOKEN=your_token \
+     -e SLACK_WEBHOOK_URL=your_webhook \
+     twitter-scraper
+   ```
 
-```bash
-# Build image
-npm run docker:build
+## GitHub Actions Deployment
 
-# Run container
-npm run docker:run
-```
+The repository includes a GitHub Actions workflow that:
 
-### Docker Environment Variables
+1. **Tests the application** on multiple Node.js versions
+2. **Creates a deployment package** with all necessary files
+3. **Uploads artifacts** for manual deployment
+4. **Provides deployment instructions** in the workflow summary
 
-Create a `.env` file for Docker:
+To use this:
 
-```env
-# Twitter API
-TWITTERAPI_API_KEY=your_key_here
-# or
-APIFY_API_TOKEN=your_token_here
+1. **Push to main/master branch** to trigger the workflow
+2. **Check the Actions tab** in your GitHub repository
+3. **Download the deployment artifact** from the workflow run
+4. **Deploy the artifact** to your preferred platform
 
-# Slack
-SLACK_WEBHOOK_URL=your_webhook_url
-SLACK_CHANNEL=#your-channel
+## Post-Deployment Setup
 
-# App Settings
-SCRAPE_INTERVAL_MINUTES=15
-MAX_TWEETS_PER_RUN=50
-NODE_ENV=production
-```
+After deploying:
 
-## ☁️ Cloud Deployment
+1. **Access your frontend** at the provided URL
+2. **Add Twitter accounts** to monitor using the web interface
+3. **Configure keywords** and settings for each account
+4. **Save changes** to start monitoring
+5. **Check the logs** to ensure everything is working
 
-### Option 1: AWS Lambda (Serverless)
-
-**Prerequisites**:
-- AWS CLI configured
-- Serverless Framework installed: `npm install -g serverless`
-
-**Deploy**:
-```bash
-# Install dependencies
-npm install
-
-# Deploy to AWS
-npm run deploy
-
-# Test locally
-serverless offline
-```
-
-**Environment Variables**:
-Set in AWS Systems Manager Parameter Store or use serverless.yml environment section.
-
-### Option 2: Heroku
-
-**Prerequisites**:
-- Heroku CLI installed
-- Heroku account
-
-**Deploy**:
-```bash
-# Create Heroku app
-heroku create your-app-name
-
-# Set environment variables
-heroku config:set TWITTERAPI_API_KEY=your_key
-heroku config:set SLACK_WEBHOOK_URL=your_webhook
-heroku config:set SLACK_CHANNEL=#your-channel
-heroku config:set SCRAPE_INTERVAL_MINUTES=15
-
-# Deploy
-git push heroku main
-
-# View logs
-heroku logs --tail
-```
-
-### Option 3: Railway
-
-**Prerequisites**:
-- Railway account
-- Railway CLI installed
-
-**Deploy**:
-```bash
-# Login to Railway
-railway login
-
-# Initialize project
-railway init
-
-# Set environment variables
-railway variables set TWITTERAPI_API_KEY=your_key
-railway variables set SLACK_WEBHOOK_URL=your_webhook
-railway variables set SLACK_CHANNEL=#your-channel
-
-# Deploy
-railway up
-```
-
-### Option 4: DigitalOcean App Platform
-
-1. Connect your GitHub repository
-2. Choose Node.js environment
-3. Set environment variables in the dashboard
-4. Deploy
-
-## 🔄 GitHub Actions (Free Tier)
-
-**Perfect for**: Small-scale monitoring, free hosting
-
-**Setup**:
-1. Fork this repository
-2. Add secrets in GitHub repository settings:
-   - `TWITTERAPI_API_KEY`
-   - `SLACK_WEBHOOK_URL`
-   - `SLACK_CHANNEL`
-   - `APIFY_API_TOKEN` (if using Apify)
-
-3. The workflow will run automatically every 15 minutes
-
-**Manual Trigger**:
-- Go to Actions tab
-- Select "Twitter Scraper" workflow
-- Click "Run workflow"
-
-## 📊 Monitoring & Maintenance
-
-### Health Checks
-
-```bash
-# Check application health
-curl http://localhost:3000/health
-
-# Get statistics
-curl http://localhost:3000/stats
-
-# Manual trigger
-curl -X POST http://localhost:3000/scrape
-```
-
-### Logs
-
-```bash
-# View application logs
-tail -f logs/app.log
-
-# View error logs
-tail -f logs/error.log
-
-# Docker logs
-docker-compose logs -f twitter-scraper
-```
-
-### Database Management
-
-```bash
-# Create backup
-curl -X POST http://localhost:3000/backup
-
-# Cleanup old data
-curl -X POST http://localhost:3000/cleanup
-```
-
-## 🔧 Configuration
-
-### Environment Variables
-
-| Variable | Required | Description | Default |
-|----------|----------|-------------|---------|
-| `TWITTERAPI_API_KEY` | Yes* | TwitterAPI.io API key | - |
-| `APIFY_API_TOKEN` | Yes* | Apify API token | - |
-| `SLACK_WEBHOOK_URL` | Yes* | Slack webhook URL | - |
-| `SLACK_BOT_TOKEN` | Yes* | Slack bot token | - |
-| `SLACK_CHANNEL` | Yes | Target Slack channel | #general |
-| `SCRAPE_INTERVAL_MINUTES` | No | Scraping interval | 15 |
-| `MAX_TWEETS_PER_RUN` | No | Max tweets per profile | 50 |
-| `NODE_ENV` | No | Environment | development |
-| `PORT` | No | Server port | 3000 |
-| `LOG_LEVEL` | No | Logging level | info |
-
-*Either TwitterAPI.io or Apify credentials are required
-
-### Profile Configuration
-
-Edit `src/config/profiles.json`:
-
-```json
-{
-  "profiles": [
-    {
-      "username": "elonmusk",
-      "displayName": "Elon Musk",
-      "enabled": true,
-      "includeRetweets": false,
-      "includeReplies": false,
-      "keywords": ["Tesla", "SpaceX"]
-    }
-  ],
-  "settings": {
-    "maxTweetsPerProfile": 10,
-    "minIntervalMinutes": 5
-  }
-}
-```
-
-## 🚨 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
-1. **Rate Limiting**:
-   - Check API limits in your Twitter API provider dashboard
-   - Increase `SCRAPE_INTERVAL_MINUTES`
-   - Reduce `MAX_TWEETS_PER_RUN`
+1. **Frontend not loading**:
+   - Check if the server is running on the correct port
+   - Verify environment variables are set correctly
+   - Check deployment platform logs
 
-2. **Slack Permissions**:
-   - Ensure webhook URL is correct
-   - Check bot has channel access
-   - Verify channel name format (#channel)
+2. **API endpoints not working**:
+   - Ensure the server has write permissions to `src/config/profiles.json`
+   - Check that all required files are included in deployment
 
-3. **Database Issues**:
-   - Check write permissions to data directory
-   - Ensure sufficient disk space
-   - Run cleanup to remove old data
+3. **Scraper not running**:
+   - Verify Twitter API credentials are correct
+   - Check Slack webhook URL is valid
+   - Review server logs for error messages
 
-4. **Network Issues**:
-   - Check firewall settings
-   - Verify proxy configuration
-   - Test API endpoints manually
+### Getting Help
 
-### Debug Mode
+- Check the deployment platform's logs
+- Review the application logs in your deployment dashboard
+- Ensure all environment variables are set correctly
+- Verify the `profiles.json` file is writable
 
-```bash
-# Enable debug logging
-export LOG_LEVEL=debug
-npm start
+## Security Considerations
 
-# Or in .env
-LOG_LEVEL=debug
-```
-
-### Performance Optimization
-
-For high-volume usage:
-
-1. **Use Redis**:
-   ```bash
-   # Add Redis to docker-compose.yml
-   # Update dbService to use Redis instead of file storage
-   ```
-
-2. **Increase Resources**:
-   - AWS Lambda: Increase memory allocation
-   - Docker: Add more CPU/memory limits
-   - Server: Use more powerful instance
-
-3. **Database Optimization**:
-   - Use PostgreSQL/MySQL instead of file storage
-   - Implement connection pooling
-   - Add database indexes
-
-## 🔒 Security Considerations
-
-1. **Environment Variables**:
-   - Never commit `.env` files
-   - Use secure secret management
-   - Rotate API keys regularly
-
-2. **Network Security**:
-   - Use HTTPS in production
-   - Implement rate limiting
-   - Add authentication for API endpoints
-
-3. **Data Protection**:
-   - Encrypt sensitive data
-   - Implement data retention policies
-   - Regular backups
-
-## 📈 Scaling
-
-### Horizontal Scaling
-
-1. **Load Balancer**:
-   - Use multiple instances behind a load balancer
-   - Implement sticky sessions for database consistency
-
-2. **Queue System**:
-   - Use Redis/Bull for job queuing
-   - Separate scraping and Slack sending processes
-
-3. **Database Scaling**:
-   - Use managed database service
-   - Implement read replicas
-   - Add caching layer
-
-### Vertical Scaling
-
-1. **Resource Allocation**:
-   - Increase CPU/memory allocation
-   - Use SSD storage
-   - Optimize Node.js settings
-
-2. **Code Optimization**:
-   - Implement connection pooling
-   - Add request caching
-   - Optimize database queries
-
-## 📞 Support
-
-- Check logs for error details
-- Review API provider documentation
-- Test with minimal configuration first
-- Use debug mode for troubleshooting 
+- **Never commit API keys** to your repository
+- **Use environment variables** for all sensitive data
+- **Enable HTTPS** in production
+- **Set up proper CORS** if needed
+- **Regularly update dependencies** for security patches 
