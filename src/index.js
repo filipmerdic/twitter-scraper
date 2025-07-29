@@ -16,6 +16,7 @@ class TwitterScraperServer {
     this.scraper = new TwitterScraper();
     this.port = process.env.PORT || 3000;
     this.isInitialized = false;
+    this.isServerless = process.env.VERCEL || process.env.NODE_ENV === 'production';
   }
 
   /**
@@ -23,14 +24,27 @@ class TwitterScraperServer {
    */
   async init() {
     try {
-      // Validate environment
-      const envValidation = validateEnvironment();
-      if (!envValidation.valid) {
-        throw new Error(envValidation.message);
+      // In serverless environment, skip heavy initialization
+      if (this.isServerless) {
+        logger.info('Running in serverless mode - skipping scraper initialization');
+        this.setupMiddleware();
+        this.setupRoutes();
+        this.isInitialized = true;
+        logger.info('Twitter Scraper Server initialized in serverless mode');
+        return;
       }
 
-      // Initialize scraper
-      await this.scraper.init();
+      // Validate environment only in non-serverless mode
+      const envValidation = validateEnvironment();
+      if (!envValidation.valid) {
+        logger.warn('Environment validation failed:', envValidation.message);
+        // Continue anyway for frontend-only mode
+      }
+
+      // Initialize scraper only if environment is valid
+      if (envValidation.valid) {
+        await this.scraper.init();
+      }
 
       // Setup Express middleware
       this.setupMiddleware();
@@ -38,14 +52,24 @@ class TwitterScraperServer {
       // Setup routes
       this.setupRoutes();
 
-      // Setup cron job
-      this.setupCronJob();
+      // Setup cron job only in non-serverless mode
+      if (!this.isServerless) {
+        this.setupCronJob();
+      }
 
       this.isInitialized = true;
       logger.info('Twitter Scraper Server initialized successfully');
     } catch (error) {
       logger.error('Failed to initialize server:', error.message);
-      throw error;
+      // In serverless mode, don't throw - just log and continue
+      if (!this.isServerless) {
+        throw error;
+      }
+      // Setup basic middleware and routes even if initialization fails
+      this.setupMiddleware();
+      this.setupRoutes();
+      this.isInitialized = true;
+      logger.info('Twitter Scraper Server initialized in fallback mode');
     }
   }
 
@@ -96,6 +120,15 @@ class TwitterScraperServer {
           return res.status(503).json({ error: 'Server not initialized' });
         }
 
+        // In serverless mode, return a message that scraping is not available
+        if (this.isServerless) {
+          return res.json({
+            success: false,
+            message: 'Scraping is not available in serverless mode. Please run the scraper locally or on a full server.',
+            serverless: true
+          });
+        }
+
         logger.info('Manual scrape triggered via API');
         await this.scraper.run();
         
@@ -119,6 +152,17 @@ class TwitterScraperServer {
       try {
         if (!this.isInitialized) {
           return res.status(503).json({ error: 'Server not initialized' });
+        }
+
+        // In serverless mode, return empty stats
+        if (this.isServerless) {
+          return res.json({
+            totalTweets: 0,
+            totalProfiles: 0,
+            lastRun: null,
+            serverless: true,
+            message: 'Statistics not available in serverless mode'
+          });
         }
 
         const stats = this.scraper.getStats();
@@ -328,4 +372,13 @@ if (require.main === module) {
   server.start();
 }
 
-module.exports = TwitterScraperServer; 
+// Export for serverless environments
+module.exports = TwitterScraperServer;
+
+// Serverless handler for Vercel
+const server = new TwitterScraperServer();
+server.init().catch(error => {
+  logger.error('Failed to initialize serverless server:', error.message);
+});
+
+module.exports.handler = server.app; 
