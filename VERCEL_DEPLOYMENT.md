@@ -49,7 +49,7 @@ This guide will help you deploy your Twitter Scraper Frontend to Vercel in just 
    ```
    TWITTER_BEARER_TOKEN=your_twitter_bearer_token
    SLACK_WEBHOOK_URL=your_slack_webhook_url
-   SCRAPE_INTERVAL_MINUTES=15
+   SCRAPE_INTERVAL_MINUTES=30
    NODE_ENV=production
    ```
 6. **Click "Deploy"**
@@ -66,7 +66,7 @@ SLACK_WEBHOOK_URL=your_slack_webhook_url
 
 ### Optional Variables
 ```bash
-SCRAPE_INTERVAL_MINUTES=15
+SCRAPE_INTERVAL_MINUTES=30
 NODE_ENV=production
 PORT=3000
 ```

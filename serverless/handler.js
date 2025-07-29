@@ -1,169 +1,81 @@
-require('dotenv').config();
-const TwitterScraper = require('../src/scraper');
+const express = require('express');
+const helmet = require('helmet');
+const cors = require('cors');
+const path = require('path');
 const logger = require('../src/utils/logger');
+const profilesApi = require('../api/profiles');
 
-let scraper = null;
+// Create Express app
+const app = express();
 
-/**
- * Initialize scraper instance
- */
-async function initScraper() {
-  if (!scraper) {
-    scraper = new TwitterScraper();
-    await scraper.init();
-  }
-  return scraper;
-}
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: false
+}));
+app.use(cors());
 
-/**
- * Scheduled scraper function
- */
-exports.scrape = async (event, context) => {
-  try {
-    logger.info('Lambda scraper function triggered');
-    
-    const scraper = await initScraper();
-    await scraper.run();
-    
-    const stats = scraper.getStats();
-    
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        success: true,
-        message: 'Scraping completed',
-        stats
-      })
-    };
-  } catch (error) {
-    logger.error('Lambda scraper failed:', error.message);
-    
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        error: 'Scraping failed',
-        message: error.message
-      })
-    };
-  }
-};
+// Body parsing middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
 
-/**
- * Manual trigger function
- */
-exports.manualTrigger = async (event, context) => {
-  try {
-    logger.info('Manual trigger function called');
-    
-    const scraper = await initScraper();
-    await scraper.run();
-    
-    const stats = scraper.getStats();
-    
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS'
-      },
-      body: JSON.stringify({
-        success: true,
-        message: 'Manual scraping completed',
-        stats
-      })
-    };
-  } catch (error) {
-    logger.error('Manual trigger failed:', error.message);
-    
-    return {
-      statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS'
-      },
-      body: JSON.stringify({
-        error: 'Manual scraping failed',
-        message: error.message
-      })
-    };
-  }
-};
+// Serve static files
+app.use(express.static(path.join(__dirname, '../public')));
 
-/**
- * Health check function
- */
-exports.healthCheck = async (event, context) => {
-  try {
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS'
-      },
-      body: JSON.stringify({
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime()
-      })
-    };
-  } catch (error) {
-    logger.error('Health check failed:', error.message);
-    
-    return {
-      statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS'
-      },
-      body: JSON.stringify({
-        status: 'unhealthy',
-        error: error.message
-      })
-    };
-  }
-};
+// Logging middleware
+app.use((req, res, next) => {
+  logger.info(`${req.method} ${req.path}`, {
+    ip: req.ip,
+    userAgent: req.get('User-Agent')
+  });
+  next();
+});
 
-/**
- * Get statistics function
- */
-exports.getStats = async (event, context) => {
-  try {
-    const scraper = await initScraper();
-    const stats = scraper.getStats();
-    
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS'
-      },
-      body: JSON.stringify(stats)
-    };
-  } catch (error) {
-    logger.error('Get stats failed:', error.message);
-    
-    return {
-      statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS'
-      },
-      body: JSON.stringify({
-        error: 'Failed to get statistics',
-        message: error.message
-      })
-    };
-  }
-}; 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    environment: 'serverless',
+    serverless: true
+  });
+});
+
+// Manual trigger endpoint (not available in serverless)
+app.post('/scrape', (req, res) => {
+  res.status(503).json({ 
+    error: 'Scraping not available in serverless mode',
+    message: 'This endpoint requires a full server environment'
+  });
+});
+
+// Get statistics endpoint (serverless mode)
+app.get('/stats', (req, res) => {
+  res.json({
+    totalTweets: 0,
+    totalProfiles: 0,
+    lastRun: null,
+    serverless: true,
+    message: 'Stats not available in serverless mode'
+  });
+});
+
+// Profiles API endpoints
+app.get('/api/profiles', profilesApi.getProfiles);
+app.put('/api/profiles', profilesApi.updateProfiles);
+
+// Serve the frontend
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
+// Error handling middleware
+app.use((error, req, res, next) => {
+  logger.error('Unhandled error:', error.message);
+  res.status(500).json({
+    error: 'Internal server error',
+    message: error.message
+  });
+});
+
+// Export for Vercel
+module.exports = app; 

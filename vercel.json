@@ -1,20 +1,15 @@
 {
   "version": 2,
   "name": "twitter-scraper-frontend",
-  "builds": [
-    {
-      "src": "src/index.js",
-      "use": "@vercel/node"
+  "functions": {
+    "serverless/handler.js": {
+      "maxDuration": 30
     }
-  ],
+  },
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "src/index.js"
-    },
-    {
       "src": "/(.*)",
-      "dest": "src/index.js"
+      "dest": "serverless/handler.js"
     }
   ],
   "env": {
