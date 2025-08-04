@@ -2,8 +2,8 @@ name: Twitter Scraper
 
 on:
   schedule:
-    # Run every 30 minutes
-    - cron: '*/30 * * * *'
+    # Run 3 times a day: 8AM, 12PM, and 4PM EST (1PM, 5PM, 9PM UTC)
+    - cron: '0 13,17,21 * * *'
   workflow_dispatch: # Allow manual trigger
 
 jobs:
@@ -35,7 +35,7 @@ jobs:
         TWITTERAPI_API_KEY: ${{ secrets.TWITTERAPI_API_KEY }}
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
-        SCRAPE_INTERVAL_MINUTES: 30
+        SCRAPE_SCHEDULE: "0 13,17,21 * * *"
         NODE_ENV: production
       run: |
         echo "Starting scraper..."

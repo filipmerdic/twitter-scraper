@@ -36,8 +36,8 @@ class TwitterScraperServer {
         this.scraper = new TwitterScraper();
         
         // Setup cron job for scraping
-        const intervalMinutes = process.env.SCRAPE_INTERVAL_MINUTES || 30;
-        cron.schedule(`*/${intervalMinutes} * * * *`, async () => {
+        // Run 3 times a day: 8AM, 12PM, and 4PM EST (1PM, 5PM, 9PM UTC)
+        cron.schedule('0 13,17,21 * * *', async () => {
           try {
             logger.info('Running scheduled scrape...');
             await this.scraper.run();
@@ -46,7 +46,7 @@ class TwitterScraperServer {
           }
         });
         
-        logger.info(`Scheduled scraping every ${intervalMinutes} minutes`);
+        logger.info('Scheduled scraping at 8AM, 12PM, and 4PM EST daily');
       } else {
         logger.info('Running in serverless mode - scraper initialization skipped');
       }

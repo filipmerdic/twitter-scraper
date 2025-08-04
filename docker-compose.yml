@@ -8,7 +8,7 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3000
-      - SCRAPE_INTERVAL_MINUTES=15
+      - SCRAPE_SCHEDULE="0 13,17,21 * * *"
       - MAX_TWEETS_PER_RUN=50
       - LOG_LEVEL=info
     env_file:

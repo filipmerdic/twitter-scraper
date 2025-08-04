@@ -18,6 +18,7 @@ module.exports = async (req, res) => {
       profilesChecked: 0,
       newTweetsFound: 0,
       messagesSent: 0,
+      duplicateTweetsSkipped: stats.duplicateTweetsSkipped || 0,
       errors: 0,
       database: stats
     });

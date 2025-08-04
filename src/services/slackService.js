@@ -232,6 +232,10 @@ class SlackService {
           },
           {
             type: "mrkdwn",
+            text: `*Duplicates Skipped:*\n${summary.duplicateTweetsSkipped || 0}`
+          },
+          {
+            type: "mrkdwn",
             text: `*Errors:*\n${summary.errors}`
           }
         ]

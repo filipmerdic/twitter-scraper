@@ -8,7 +8,7 @@ provider:
   region: us-east-1
   environment:
     NODE_ENV: production
-    SCRAPE_INTERVAL_MINUTES: ${env:SCRAPE_INTERVAL_MINUTES, '15'}
+    SCRAPE_SCHEDULE: ${env:SCRAPE_SCHEDULE, '0 13,17,21 * * *'}
     MAX_TWEETS_PER_RUN: ${env:MAX_TWEETS_PER_RUN, '50'}
     DB_FILE_PATH: /tmp/tweets.json
     LOG_LEVEL: info
@@ -27,7 +27,8 @@ functions:
     handler: serverless/handler.scrape
     events:
       - schedule:
-          rate: rate(${env:SCRAPE_INTERVAL_MINUTES, '15'} minutes)
+          # Run 3 times a day: 8AM, 12PM, and 4PM EST (1PM, 5PM, 9PM UTC)
+          rate: cron(0 13,17,21 * * ? *)
           enabled: true
     timeout: 300
     memorySize: 512

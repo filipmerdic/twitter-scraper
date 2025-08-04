@@ -2,14 +2,39 @@
 
 A Node.js application that monitors specific Twitter profiles and sends new tweets directly to a Slack channel. Now with a **web-based frontend** for easy account management!
 
-## ✨ New Features
+## 🚀 Features
 
-- **🌐 Web Interface**: Manage Twitter accounts through a beautiful web UI
-- **📝 Add/Remove Accounts**: Easily add or remove Twitter accounts to monitor
-- **🔍 Keyword Management**: Set specific keywords to filter tweets for each account
-- **⚙️ Account Settings**: Configure retweet and reply inclusion per account
+- **🔍 Smart Filtering**: Filter tweets by keywords, exclude retweets/replies
+- **📱 Slack Integration**: Rich formatted messages with profile pictures
 - **🔄 Real-time Updates**: Changes are saved immediately and picked up by the scraper
 - **📊 Visual Dashboard**: See all monitored accounts at a glance
+- **🛡️ Duplicate Prevention**: Content-based deduplication prevents the same tweet from appearing multiple times
+- **📈 Comprehensive Stats**: Track processed tweets, duplicates skipped, and performance metrics
+
+## Deduplication System
+
+The app includes a robust deduplication system that prevents the same tweet content from appearing in multiple updates:
+
+- **Content Hashing**: Each tweet's content is hashed to create a unique fingerprint
+- **Global Tracking**: Processed tweet content is tracked across all profiles
+- **Automatic Cleanup**: Old processed tweets are automatically cleaned up to prevent database bloat
+- **Statistics**: Track how many duplicate tweets were skipped in each run
+
+This ensures that even if the same tweet is fetched multiple times due to API inconsistencies, it will only be sent to Slack once.
+
+## Scheduling Configuration
+
+The Twitter scraper is configured to run **3 times per day** at the following times (EST):
+- **8:00 AM EST** (1:00 PM UTC)
+- **12:00 PM EST** (5:00 PM UTC) 
+- **4:00 PM EST** (9:00 PM UTC)
+
+This scheduling applies to all deployment methods:
+- GitHub Actions (automated workflow)
+- AWS Lambda (serverless functions)
+- Docker containers (with cron scheduling)
+
+The schedule can be customized by modifying the `SCRAPE_SCHEDULE` environment variable or the cron expressions in the respective configuration files.
 
 ## 🏗️ Architecture
 
@@ -164,7 +189,7 @@ The application tracks:
 - Input validation and sanitization
 - Secure logging (no sensitive data)
 
-## 🧪 Testing
+## �� Testing
 
 ```bash
 # Run tests

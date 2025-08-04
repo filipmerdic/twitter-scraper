@@ -2,6 +2,7 @@ const low = require('lowdb');
 const FileSync = require('lowdb/adapters/FileSync');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const logger = require('../utils/logger');
 
 class DatabaseService {
@@ -28,9 +29,11 @@ class DatabaseService {
       // Set default data structure
       this.db.defaults({
         profiles: {},
+        processedTweets: {}, // Global tweet tracking by content hash
         stats: {
           totalTweetsProcessed: 0,
           totalSlackMessagesSent: 0,
+          duplicateTweetsSkipped: 0,
           lastRun: null,
           errors: []
         },
@@ -46,6 +49,57 @@ class DatabaseService {
       logger.error('Failed to initialize database:', error);
       throw error;
     }
+  }
+
+  /**
+   * Generate content hash for a tweet
+   * @param {Object} tweet - Tweet object
+   * @returns {string} Content hash
+   */
+  generateContentHash(tweet) {
+    const text = tweet.text || tweet.full_text || '';
+    const cleanText = text.replace(/\s+/g, ' ').trim().toLowerCase();
+    return crypto.createHash('sha256').update(cleanText).digest('hex');
+  }
+
+  /**
+   * Check if tweet content has been processed before
+   * @param {Object} tweet - Tweet object
+   * @returns {boolean} Whether tweet content is duplicate
+   */
+  isDuplicateContent(tweet) {
+    if (!this.initialized) {
+      throw new Error('Database not initialized');
+    }
+
+    const contentHash = this.generateContentHash(tweet);
+    const processedTweets = this.db.get('processedTweets').value();
+    return processedTweets[contentHash] !== undefined;
+  }
+
+  /**
+   * Mark tweet content as processed
+   * @param {Object} tweet - Tweet object
+   * @param {string} username - Username who posted the tweet
+   */
+  markContentAsProcessed(tweet, username) {
+    if (!this.initialized) {
+      throw new Error('Database not initialized');
+    }
+
+    const contentHash = this.generateContentHash(tweet);
+    const processedAt = new Date().toISOString();
+    
+    this.db.get('processedTweets')
+      .set(contentHash, {
+        tweetId: tweet.id_str,
+        username: username,
+        processedAt: processedAt,
+        content: tweet.text || tweet.full_text || ''
+      })
+      .write();
+
+    logger.debug(`Marked tweet content as processed: ${contentHash.substring(0, 8)}...`);
   }
 
   /**
@@ -88,8 +142,9 @@ class DatabaseService {
    * @param {string} username - Twitter username
    * @param {Object} tweet - Tweet object
    * @param {boolean} sentToSlack - Whether tweet was sent to Slack
+   * @param {boolean} isDuplicate - Whether this was a duplicate tweet
    */
-  recordTweet(username, tweet, sentToSlack = false) {
+  recordTweet(username, tweet, sentToSlack = false, isDuplicate = false) {
     if (!this.initialized) {
       throw new Error('Database not initialized');
     }
@@ -99,7 +154,8 @@ class DatabaseService {
       text: tweet.text || tweet.full_text,
       created_at: tweet.created_at,
       processed_at: new Date().toISOString(),
-      sent_to_slack: sentToSlack
+      sent_to_slack: sentToSlack,
+      is_duplicate: isDuplicate
     };
 
     // Add to profile's tweet history (keep last 100)
@@ -117,6 +173,7 @@ class DatabaseService {
     this.db.get('stats')
       .update('totalTweetsProcessed', n => n + 1)
       .update('totalSlackMessagesSent', n => sentToSlack ? n + 1 : n)
+      .update('duplicateTweetsSkipped', n => isDuplicate ? n + 1 : n)
       .set('lastRun', new Date().toISOString())
       .write();
   }
@@ -202,6 +259,7 @@ class DatabaseService {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
+    // Clean up profile history
     const profiles = this.db.get('profiles').value();
     
     Object.keys(profiles).forEach(username => {
@@ -217,6 +275,23 @@ class DatabaseService {
           .write();
       }
     });
+
+    // Clean up processed tweets (keep last 1000 to prevent database bloat)
+    const processedTweets = this.db.get('processedTweets').value();
+    const tweetEntries = Object.entries(processedTweets);
+    
+    if (tweetEntries.length > 1000) {
+      // Sort by processed date and keep only the most recent 1000
+      const sortedEntries = tweetEntries.sort((a, b) => 
+        new Date(b[1].processedAt) - new Date(a[1].processedAt)
+      );
+      
+      const recentEntries = sortedEntries.slice(0, 1000);
+      const recentTweets = Object.fromEntries(recentEntries);
+      
+      this.db.set('processedTweets', recentTweets).write();
+      logger.info(`Cleaned up processed tweets: kept ${recentEntries.length} most recent entries`);
+    }
 
     logger.info('Database cleanup completed');
   }

@@ -108,6 +108,7 @@ class TwitterScraper {
       profilesChecked: 0,
       newTweetsFound: 0,
       messagesSent: 0,
+      duplicateTweetsSkipped: 0,
       errors: 0
     };
 
@@ -167,11 +168,35 @@ class TwitterScraper {
       return;
     }
 
-    logger.info(`Found ${filteredTweets.length} new tweets for ${profile.username}`);
+    // Check for duplicate content and filter out duplicates
+    const uniqueTweets = [];
+    let duplicateCount = 0;
+    
+    for (const tweet of filteredTweets) {
+      if (dbService.isDuplicateContent(tweet)) {
+        logger.debug(`Skipping duplicate tweet content: ${tweet.id_str}`);
+        dbService.recordTweet(profile.username, tweet, false, true);
+        duplicateCount++;
+        this.stats.duplicateTweetsSkipped++;
+        continue;
+      }
+      uniqueTweets.push(tweet);
+    }
+
+    if (duplicateCount > 0) {
+      logger.info(`Skipped ${duplicateCount} duplicate tweets for ${profile.username}`);
+    }
+
+    if (uniqueTweets.length === 0) {
+      logger.info(`No unique tweets found for ${profile.username} after deduplication`);
+      return;
+    }
+
+    logger.info(`Found ${uniqueTweets.length} new unique tweets for ${profile.username}`);
 
     // Send tweets to Slack
     let sentCount = 0;
-    for (const tweet of filteredTweets) {
+    for (const tweet of uniqueTweets) {
       try {
         const sent = await this.slackService.sendTweet(tweet, profile);
         if (sent) {
@@ -179,8 +204,9 @@ class TwitterScraper {
           this.stats.messagesSent++;
         }
         
-        // Record tweet in database
-        dbService.recordTweet(profile.username, tweet, sent);
+        // Mark content as processed and record tweet
+        dbService.markContentAsProcessed(tweet, profile.username);
+        dbService.recordTweet(profile.username, tweet, sent, false);
         
         // Update last tweet ID
         dbService.setLastTweetId(profile.username, tweet.id_str);
@@ -189,11 +215,11 @@ class TwitterScraper {
       } catch (error) {
         logger.error(`Failed to send tweet ${tweet.id_str}:`, error.message);
         console.error(`Slack error details for tweet ${tweet.id_str}:`, error);
-        dbService.recordTweet(profile.username, tweet, false);
+        dbService.recordTweet(profile.username, tweet, false, false);
       }
     }
 
-    logger.info(`Sent ${sentCount}/${filteredTweets.length} tweets for ${profile.username}`);
+    logger.info(`Sent ${sentCount}/${uniqueTweets.length} tweets for ${profile.username}`);
   }
 
   /**
