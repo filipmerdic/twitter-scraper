@@ -29,7 +29,7 @@ functions:
       - schedule:
           # Run 3 times a day: 8AM, 12PM, and 4PM EST (1PM, 5PM, 9PM UTC)
           rate: cron(0 13,17,21 * * ? *)
-          enabled: true
+          enabled: false
     timeout: 300
     memorySize: 512
     environment:

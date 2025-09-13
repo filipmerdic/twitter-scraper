@@ -2,6 +2,10 @@
 
 A Node.js application that monitors specific Twitter profiles and sends new tweets directly to a Slack channel. Now with a **web-based frontend** for easy account management!
 
+## ⚠️ Current Status: DISABLED
+
+**The scraper is currently disabled due to API credit limits.** The scheduled scraping has been turned off to prevent further API usage. The application can still be used for manual testing and development, but automatic scheduled runs are disabled.
+
 ## 🚀 Features
 
 - **🔍 Smart Filtering**: Filter tweets by keywords, exclude retweets/replies
