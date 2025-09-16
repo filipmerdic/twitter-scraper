@@ -1,9 +1,11 @@
-name: Twitter Scraper
+# DISABLED: This workflow is currently disabled due to API credit limits
+# To re-enable: uncomment the schedule section below and update the workflow name
+name: Twitter Scraper (DISABLED - OUT OF API CREDITS)
 
 on:
-  schedule:
+  # schedule:
     # Run 3 times a day: 8AM, 12PM, and 4PM EST (1PM, 5PM, 9PM UTC)
-    - cron: '0 13,17,21 * * *'
+    # - cron: '0 13,17,21 * * *'
   workflow_dispatch: # Allow manual trigger
 
 jobs:
